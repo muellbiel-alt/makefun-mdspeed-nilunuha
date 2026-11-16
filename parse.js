@@ -85,6 +85,8 @@ function parseInline(text) {
   return text;
 }
 
+const isHeading = (line) => /^(#{1,6})\s+(.+?)(?:\s+#+)?$/.test(line);
+
 export function parse(markdown) {
   if (!markdown) return '';
   
@@ -206,14 +208,14 @@ export function parse(markdown) {
     while (i < len) {
       const l = lines[i];
       const lt = l.trim();
-      if (lt === '' || lt.startsWith('#') || /^(?:[*-_]\s*){3,}$/.test(lt) || lt.startsWith('>')) {
+      if (lt === '' || isHeading(l) || /^(?:[*-_]\s*){3,}$/.test(lt) || lt.startsWith('>')) {
         break;
       }
       paraLines.push(l);
       i++;
     }
     if (paraLines.length > 0) {
-      html.push(`<p>${parseInline(paraLines.join('\n'))}</p>`); // wait, check closing quote
+      html.push(`<p>${parseInline(paraLines.join('\n'))}</p>`);
     }
   }
 
