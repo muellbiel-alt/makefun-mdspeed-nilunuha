@@ -8,7 +8,10 @@ try {
 
   const content = fs.readFileSync(path.join(inputDir, 'cases.json'), 'utf8');
   const cases = JSON.parse(content);
-  const results = cases.map((c: { markdown: string }) => parse(c.markdown));
+  const results = new Array(cases.length);
+  for (let i = 0; i < cases.length; i++) {
+    results[i] = parse(cases[i].markdown);
+  }
   
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });

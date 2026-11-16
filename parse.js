@@ -18,8 +18,6 @@ function escapeHtml(html) {
 function parseInline(text) {
   if (!text) return '';
   
-  // Fast inline parsing pipeline
-  // 1. Code spans `code`
   const codeSpans = [];
   text = text.replace(/(`+)([\s\S]*?)\1/g, (match, p1, p2) => {
     const id = `\x00C${codeSpans.length}\x00`;
@@ -27,7 +25,6 @@ function parseInline(text) {
     return id;
   });
 
-  // 2. Images ![alt](href)
   text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, href) => {
     const parts = href.trim().split(/\s+/);
     let url = parts[0];
@@ -41,7 +38,6 @@ function parseInline(text) {
     return res;
   });
 
-  // 3. Links [text](href)
   text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, href) => {
     const parts = href.trim().split(/\s+/);
     let url = parts[0];
@@ -56,22 +52,18 @@ function parseInline(text) {
     return res;
   });
 
-  // 4. Autolinks <http://...>
   text = text.replace(/<([a-zA-Z][a-zA-Z0-9+.-]{1,31}:[^ >]*)>/g, (match, link) => {
     return `<a href="${escapeHtml(link)}">${escapeHtml(link)}</a>`;
   });
 
-  // 5. Email autolinks <user@domain>
   text = text.replace(/<([a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*)>/g, (match, email) => {
     return `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`;
   });
 
-  // 6. Strikethrough ~~text~~
   text = text.replace(/~~([\s\S]*?)~~/g, (match, p1) => {
     return `<del>${parseInline(p1)}</del>`;
   });
 
-  // 7. Strong **text** or __text__
   text = text.replace(/\*\*([\s\S]*?)\*\*/g, (match, p1) => {
     return `<strong>${parseInline(p1)}</strong>`;
   });
@@ -79,7 +71,6 @@ function parseInline(text) {
     return `<strong>${parseInline(p1)}</strong>`;
   });
 
-  // 8. Emphasis *text* or _text_
   text = text.replace(/\*([\s\S]*?)\*/g, (match, p1) => {
     return `<em>${parseInline(p1)}</em>`;
   });
@@ -87,7 +78,6 @@ function parseInline(text) {
     return `<em>${parseInline(p1)}</em>`;
   });
 
-  // Restore code spans
   text = text.replace(/\x00C(\d+)\x00/g, (match, id) => {
     return codeSpans[parseInt(id, 10)];
   });
@@ -111,7 +101,6 @@ export function parse(markdown) {
       continue;
     }
 
-    // Fenced code block
     const trimmed = line.trim();
     if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
       const fence = trimmed.slice(0, 3);
@@ -129,14 +118,13 @@ export function parse(markdown) {
       continue;
     }
 
-    // Thematic break
     if (/^(?:[*-_]\s*){3,}$/.test(trimmed)) {
       html.push('<hr>');
       i++;
       continue;
     }
 
-    // ATX Headings
+    // ATX Headings (1 to 6 hashes)
     const headingMatch = line.match(/^(#{1,6})\s+(.+?)(?:\s+#+)?$/);
     if (headingMatch) {
       const level = headingMatch[1].length;
@@ -146,7 +134,6 @@ export function parse(markdown) {
       continue;
     }
 
-    // Blockquote
     if (trimmed.startsWith('>')) {
       const bqLines = [];
       while (i < len) {
@@ -166,7 +153,6 @@ export function parse(markdown) {
       continue;
     }
 
-    // Tables (GFM)
     if (line.includes('|') && i + 1 < len && /^[\s|:-]+$/.test(lines[i + 1])) {
       const parseCells = (str) => {
         let parts = str.split('|');
@@ -227,7 +213,7 @@ export function parse(markdown) {
       i++;
     }
     if (paraLines.length > 0) {
-      html.push(`<p>${parseInline(paraLines.join('\n'))}</p>`);
+      html.push(`<p>${parseInline(paraLines.join('\n'))}</p>`); // wait, check closing quote
     }
   }
 
